@@ -89,6 +89,8 @@ impl Builder {
             println!("File {:?}", file.unwrap());
         }
         // std::env::set_current_dir("limine").unwrap();
+
+        // FIXME CHange below
         Command::new("make")
             .arg("-C")
             .arg(&self.config.build.limine_path)
@@ -199,6 +201,7 @@ impl Builder {
     fn install_limine_to_iso(&self) -> Result<(), BuildError> {
         println!("{:?}", self.config.build.limine_path);
         println!("Image path {:?}", self.config.build.image_path);
+        // FIXME CHange below
         let limine_binary = self.config.build.limine_path.join("limine");
         Command::new(limine_binary)
             .args(&[
