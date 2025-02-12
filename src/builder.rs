@@ -15,11 +15,11 @@ impl Builder {
     }
 
     pub fn build(&self, kernel_path: Option<&Path>) -> Result<(), BuildError> {
-        self.execute_prebuilder()?;
-        self.prepare_ovmf_files()?;
-        self.prepare_limine_files()?;
-        self.copy_kernel(kernel_path)?;
-        self.create_limine_iso()?;
+        self.execute_prebuilder().unwrap();
+        self.prepare_ovmf_files().unwrap();
+        self.prepare_limine_files().unwrap();
+        self.copy_kernel(kernel_path).unwrap();
+        self.create_limine_iso().unwrap();
         Ok(())
     }
 
@@ -81,9 +81,20 @@ impl Builder {
                 ])
                 .arg(&self.config.build.limine_path)
                 .stdout(Stdio::piped())
-                .output()
+                .status()
                 .map_err(|e| BuildError::CloneLimineFailed { source: e })?;
         }
+        let paths = std::fs::read_dir(".").unwrap();
+        for file in paths {
+            println!("File {:?}", file.unwrap());
+        }
+        // std::env::set_current_dir("limine").unwrap();
+        Command::new("make")
+            .arg("-C")
+            .arg(&self.config.build.limine_path)
+            .status()
+            .map_err(|e| BuildError::CloneLimineFailed { source: (e) })?;
+        // std::env::set_current_dir("..").unwrap();
         Ok(())
     }
 
@@ -100,7 +111,7 @@ impl Builder {
     fn copy_limine_binary(&self) -> Result<(), BuildError> {
         let limine_boot_dir = self.config.build.iso_root.join("boot").join("limine");
         let limine_efi_dir = self.config.build.iso_root.join("EFI").join("BOOT");
-
+        println!("{limine_boot_dir:?} {limine_efi_dir:?}");
         std::fs::create_dir_all(&limine_boot_dir)?;
         std::fs::create_dir_all(&limine_efi_dir)?;
 
@@ -151,11 +162,11 @@ impl Builder {
     fn create_limine_iso(&self) -> Result<(), BuildError> {
         // Create parent directory for the ISO if it doesn't exist
         if let Some(parent) = self.config.build.image_path.parent() {
-            std::fs::create_dir_all(parent)?;
+            std::fs::create_dir_all(parent).unwrap();
         }
 
-        self.create_raw_iso()?;
-        self.install_limine_to_iso()?;
+        self.create_raw_iso().unwrap();
+        self.install_limine_to_iso().unwrap();
         Ok(())
     }
 
@@ -186,7 +197,9 @@ impl Builder {
     }
 
     fn install_limine_to_iso(&self) -> Result<(), BuildError> {
-        let limine_binary = self.config.build.limine_path.join("limine.exe");
+        println!("{:?}", self.config.build.limine_path);
+        println!("Image path {:?}", self.config.build.image_path);
+        let limine_binary = self.config.build.limine_path.join("limine");
         Command::new(limine_binary)
             .args(&[
                 "bios-install",
